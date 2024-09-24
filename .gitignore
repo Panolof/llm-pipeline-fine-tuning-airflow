@@ -1,0 +1,18 @@
+# .gitignore
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Data files
+/data/
+
+# Virtual environment
+venv/
+.env
+
+# DVC cache
+/.dvc/
+
+# Airflow logs
+logs/
