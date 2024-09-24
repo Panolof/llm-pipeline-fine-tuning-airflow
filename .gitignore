@@ -1,18 +1,88 @@
 # .gitignore
 
-# Python cache files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
 
-# Data files
-/data/
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
 # Virtual environment
 venv/
-.env
+ENV/
+env/
+.venv/
+pip-wheel-metadata/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Logs and local data
+logs/
+*.log
+data/
+models/
+results/
+
+# Airflow
+airflow.cfg
+unittests.cfg
+# The SQLite database used by the default executor
+airflow.db
 
 # DVC cache
 /.dvc/
+.cache/
 
-# Airflow logs
-logs/
+# Secrets
+secrets/
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tests
+coverage/
+htmlcov/
+
+# Pytest
+.cache/
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+
+# Docker
+*.dockerfile
+docker-compose.yml
+
+# Custom
+models/saved_model/
+data/processed/
+data/raw/
+scripts/__pycache__/
+scripts/*.pyc
+scripts/*.pyo
+scripts/*.pyd
