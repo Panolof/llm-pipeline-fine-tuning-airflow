@@ -129,7 +129,8 @@ You can modify the `sample_texts` list in `scripts/example_data.py` to include y
 ```
 transformer_airflow_project/
 ├── dags/
-│   └── emotion_detection_dag.py
+│   ├── emotion_detection_dag.py
+│   └── example_dag.py          # Added example DAG
 ├── data/
 │   ├── raw/
 │   └── processed/
@@ -141,7 +142,7 @@ transformer_airflow_project/
 │   ├── train_model.py
 │   ├── evaluate_model.py
 │   ├── save_model.py
-│   └── example_data.py  # Added script
+│   └── example_data.py         # Added inference script
 ├── tests/
 │   ├── __init__.py
 │   └── test_functions.py
@@ -170,6 +171,8 @@ transformer_airflow_project/
 - **NumPy 1.21.0**
 - **Slack API Token** (if using Slack notifications)
 - **Git**
+- **Docker** (if using Docker)
+- **GitHub Actions** (for CI/CD)
 
 ---
 
@@ -226,38 +229,80 @@ transformer_airflow_project/
 
 ## Usage
 
-1. **Start Airflow Services**:
+### 1. Start Airflow Services
 
-   ```bash
-   airflow scheduler &
-   airflow webserver -p 8080 &
-   ```
+Start the Airflow scheduler and webserver in separate terminal windows or as background processes:
 
-2. **Access Airflow UI**:
+```bash
+airflow scheduler &
+airflow webserver -p 8080 &
+```
 
-   - Open `http://localhost:8080` in your web browser.
+### 2. Access Airflow UI
 
-3. **Trigger the DAG**:
+Open your web browser and navigate to [http://localhost:8080](http://localhost:8080) to access the Airflow UI.
 
-   - **Via UI**: Find `emotion_detection_dag` and click the trigger button.
-   - **Via CLI**:
+### 3. Trigger the DAGs
 
-     ```bash
-     airflow dags trigger emotion_detection_dag
-     ```
+#### a. **Emotion Detection DAG**
 
-4. **Monitor Pipeline**:
+- **Via UI**:
+  - Locate the `emotion_detection_dag` in the DAGs list.
+  - Click the toggle to activate the DAG if it's not already active.
+  - Click the **Trigger DAG** button to start the pipeline.
 
-   - Use the Airflow UI to monitor task progress and view logs.
+- **Via CLI**:
 
-5. **Review Results**:
+  ```bash
+  airflow dags trigger emotion_detection_dag
+  ```
 
-   - The fine-tuned model is saved in `models/saved_model/`.
-   - Evaluation metrics are printed in logs and accessible in the Airflow UI.
+#### b. **Example DAG**
 
-6. **Run Inference**:
+The `example_dag.py` is a simple DAG included for demonstration and testing purposes.
 
-   - See the [Inference](#inference) section for instructions on using the fine-tuned model.
+- **Purpose**: To verify that your Airflow setup is functioning correctly by running a minimal DAG with no real tasks.
+
+- **Via UI**:
+  - Locate the `example_dag` in the DAGs list.
+  - Click the toggle to activate the DAG if it's not already active.
+  - Click the **Trigger DAG** button to run the example DAG.
+
+- **Via CLI**:
+
+  ```bash
+  airflow dags trigger example_dag
+  ```
+
+**Note**: The `example_dag` contains only `DummyOperator` tasks (`start` and `end`) and serves as a template or a sanity check for your Airflow installation.
+
+### 4. Monitor Pipeline
+
+- **Airflow UI**:
+  - Use the **Graph View** or **Tree View** to monitor task progress.
+  - Click on individual tasks to view logs and troubleshoot if necessary.
+
+- **Logs Directory**:
+  - Check the `logs/` directory for detailed logs of each task execution.
+
+### 5. Review Results
+
+- **Emotion Detection Pipeline**:
+  - The fine-tuned model is saved in `models/saved_model/`.
+  - Evaluation metrics are available in the task logs and can be accessed via the Airflow UI.
+
+- **Example DAG**:
+  - Since it uses `DummyOperator`, it won't produce any outputs but confirms that Airflow is operational.
+
+### 6. Run Inference
+
+After training and saving the model, perform inference using the `example_data.py` script:
+
+```bash
+python scripts/example_data.py
+```
+
+This script will output predicted emotions for the sample sentences provided.
 
 ---
 
@@ -273,6 +318,8 @@ source venv/bin/activate
 python -m unittest discover tests
 ```
 
+**Note**: Ensure that the Airflow services are not running during testing to prevent conflicts, especially if using local SQLite databases.
+
 ---
 
 ## Future Work
@@ -282,6 +329,10 @@ python -m unittest discover tests
 - **Model Serving**: Deploy the model using **TensorFlow Serving** or **TorchServe**.
 - **Kubernetes Executor**: Scale Airflow tasks with Kubernetes for distributed execution.
 - **CI/CD Integration**: Set up **GitHub Actions** or **Jenkins** for continuous integration and deployment.
+- **Dockerization**: Containerize the application for easier deployment and scalability.
+- **Model Registry**: Use tools like **MLflow** for model tracking and management.
+- **Advanced Monitoring**: Integrate **Prometheus** and **Grafana** for real-time monitoring and alerting.
+- **Security Enhancements**: Implement authentication and authorization mechanisms for model access.
 
 ---
 
@@ -323,4 +374,3 @@ We use the **Emotion Dataset**, but you can experiment with other text datasets:
 ---
 
 **Note**: Remember to update the `CONTRIBUTING.md` and `LICENSE` files if any changes have been made.
-
