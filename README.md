@@ -7,6 +7,7 @@
 - [Airflow DAG Details](#airflow-dag-details)
 - [Dataset](#dataset)
 - [Model Fine-Tuning](#model-fine-tuning)
+- [Inference](#inference)
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -32,7 +33,8 @@ The goal is to build an end-to-end automated pipeline that:
 2. **Fine-Tunes a Transformer Model**: Uses Hugging Face's `bert-base-uncased` model for emotion classification.
 3. **Evaluates the Model**: Assesses performance using metrics like accuracy and F1-score.
 4. **Saves the Model**: Stores the fine-tuned model locally or on cloud storage.
-5. **Notifies Upon Completion**: Sends an email or Slack notification when the pipeline finishes.
+5. **Performs Inference**: Uses the fine-tuned model to predict emotions on new text data.
+6. **Notifies Upon Completion**: Sends an email or Slack notification when the pipeline finishes.
 
 By integrating these steps into an Airflow DAG, we demonstrate how to manage complex workflows, ensure data consistency, and automate machine learning tasks in a production-like environment.
 
@@ -72,160 +74,55 @@ We utilize the **Emotion Dataset**, containing 20,000 English Twitter messages l
 
 ## Model Fine-Tuning
 
-We fine-tune the `bert-base-uncased` Transformer model for emotion classification. Below is a step-by-step guide:
-
-### Step 1: Data Download and Preparation
-
-- **Download Dataset**:
-
-  ```python
-  from datasets import load_dataset
-  dataset = load_dataset('dair-ai/emotion')
-  ```
-
-- **Split Dataset**:
-
-  ```python
-  train_dataset = dataset['train']
-  val_dataset = dataset['validation']
-  test_dataset = dataset['test']
-  ```
-
-### Step 2: Data Preprocessing
-
-- **Initialize Tokenizer**:
-
-  ```python
-  from transformers import BertTokenizer
-  tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-  ```
-
-- **Tokenize Data**:
-
-  ```python
-  def tokenize(batch):
-      return tokenizer(batch['text'], padding=True, truncation=True)
-  train_dataset = train_dataset.map(tokenize, batched=True)
-  val_dataset = val_dataset.map(tokenize, batched=True)
-  test_dataset = test_dataset.map(tokenize, batched=True)
-  ```
-
-- **Encode Labels**:
-
-  ```python
-  label_encoder = {label: i for i, label in enumerate(train_dataset.features['label'].names)}
-  ```
-
-### Step 3: Model Setup
-
-- **Load Pre-trained Model**:
-
-  ```python
-  from transformers import BertForSequenceClassification
-  model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=6)
-  ```
-
-### Step 4: Training
-
-- **Define Training Arguments**:
-
-  ```python
-  from transformers import TrainingArguments
-  training_args = TrainingArguments(
-      output_dir='./results',
-      num_train_epochs=3,
-      per_device_train_batch_size=16,
-      per_device_eval_batch_size=64,
-      evaluation_strategy='epoch',
-      save_total_limit=2,
-      load_best_model_at_end=True,
-  )
-  ```
-
-- **Initialize Trainer**:
-
-  ```python
-  from transformers import Trainer
-  trainer = Trainer(
-      model=model,
-      args=training_args,
-      train_dataset=train_dataset,
-      eval_dataset=val_dataset,
-      tokenizer=tokenizer,
-  )
-  ```
-
-- **Train Model**:
-
-  ```python
-  trainer.train()
-  ```
-
-### Step 5: Evaluation
-
-- **Evaluate Model**:
-
-  ```python
-  metrics = trainer.evaluate(eval_dataset=test_dataset)
-  print(metrics)
-  ```
-
-- **Detailed Metrics**:
-
-  ```python
-  import numpy as np
-  from sklearn.metrics import classification_report
-
-  predictions, labels, _ = trainer.predict(test_dataset)
-  preds = np.argmax(predictions, axis=1)
-  report = classification_report(labels, preds, target_names=label_encoder.keys())
-  print(report)
-  ```
-
-### Step 6: Saving the Model
-
-- **Save Locally**:
-
-  ```python
-  model.save_pretrained('./saved_model')
-  tokenizer.save_pretrained('./saved_model')
-  ```
-
-- **Save to Cloud (Optional)**:
-
-  Upload to AWS S3 or GCP Storage using appropriate SDKs.
-
-### Step 7: Integration into Airflow
-
-Each step is encapsulated in scripts within the `scripts/` directory and executed via Airflow tasks, ensuring modularity and ease of maintenance.
+We fine-tune the `bert-base-uncased` Transformer model for emotion classification. Each step is encapsulated in scripts within the `scripts/` directory and executed via Airflow tasks, ensuring modularity and ease of maintenance.
 
 ---
 
+## Inference
 
+Once the model has been fine-tuned and saved, you can use it to predict emotions on new text data using the `scripts/example_data.py` script.
 
+**Running Inference**:
 
+1. **Ensure the Fine-Tuned Model is Saved**:
 
+   Make sure the model has been trained and saved in the `models/saved_model/` directory by running the Airflow pipeline.
 
+2. **Run the Inference Script**:
 
+   ```bash
+   python scripts/example_data.py
+   ```
 
+   This script will load the fine-tuned model and tokenizer and perform emotion prediction on a set of sample sentences.
 
+**Sample Output**:
 
+```
+Text: I'm so happy to hear from you!
+Predicted Emotion: joy
 
+Text: This is the worst day ever.
+Predicted Emotion: sadness
 
+Text: I can't wait to see you again.
+Predicted Emotion: love
 
+Text: I'm feeling very anxious about the meeting.
+Predicted Emotion: fear
 
+Text: You did an amazing job!
+Predicted Emotion: joy
 
+Text: I'm utterly disappointed.
+Predicted Emotion: sadness
+```
 
+**Custom Input**:
 
+You can modify the `sample_texts` list in `scripts/example_data.py` to include your own sentences for emotion prediction.
 
-
-
-
-
-
-
-
-
+---
 
 ## Project Structure
 
@@ -243,10 +140,16 @@ transformer_airflow_project/
 │   ├── preprocess_data.py
 │   ├── train_model.py
 │   ├── evaluate_model.py
-│   └── save_model.py
+│   ├── save_model.py
+│   └── example_data.py  # Added script
 ├── tests/
-│   └── test_pipeline.py
+│   ├── __init__.py
+│   └── test_functions.py
 ├── logs/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── .gitignore
 ├── requirements.txt
 ├── README.md
 ├── CONTRIBUTING.md
@@ -259,9 +162,12 @@ transformer_airflow_project/
 
 - **Python 3.7+**
 - **Apache Airflow 2.x**
-- **Hugging Face Transformers**
-- **Datasets Library**
-- **PyTorch**
+- **Hugging Face Transformers 4.21.0**
+- **Datasets Library 2.3.2**
+- **PyTorch 1.11.0**
+- **Scikit-learn 0.24.2**
+- **Pandas 1.3.0**
+- **NumPy 1.21.0**
 - **Slack API Token** (if using Slack notifications)
 - **Git**
 
@@ -281,13 +187,14 @@ transformer_airflow_project/
    ```bash
    python3 -m venv venv
    source venv/bin/activate
+   pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
 3. **Initialize Airflow**:
 
    ```bash
-   export AIRFLOW_HOME=~/airflow
+   export AIRFLOW_HOME=$(pwd)/airflow
    airflow db init
    airflow users create \
        --username admin \
@@ -297,16 +204,22 @@ transformer_airflow_project/
        --email your_email@example.com
    ```
 
-4. **Configure Connections**:
+4. **Set Up Airflow Configuration**:
+
+   - Ensure the `dags_folder` in `airflow.cfg` points to the `dags/` directory in your project.
+   - Set any required environment variables or connections.
+
+5. **Configure Connections and Variables**:
 
    - **Slack**: Add a Slack connection in Airflow with your API token.
    - **AWS/GCP**: Set up connections if saving models to cloud storage.
+   - **Environment Variables**: Set any required environment variables.
 
-5. **Install Airflow Providers**:
+6. **Install Airflow Providers**:
 
    ```bash
    pip install apache-airflow-providers-slack
-   pip install apache-airflow-providers-http
+   pip install apache-airflow-providers-email
    ```
 
 ---
@@ -316,28 +229,35 @@ transformer_airflow_project/
 1. **Start Airflow Services**:
 
    ```bash
-   airflow scheduler
-   airflow webserver
+   airflow scheduler &
+   airflow webserver -p 8080 &
    ```
 
-2. **Trigger the DAG**:
+2. **Access Airflow UI**:
 
-   - **Via UI**: Navigate to `http://localhost:8080`, find `emotion_detection_dag`, and click the trigger button.
+   - Open `http://localhost:8080` in your web browser.
+
+3. **Trigger the DAG**:
+
+   - **Via UI**: Find `emotion_detection_dag` and click the trigger button.
    - **Via CLI**:
 
      ```bash
      airflow dags trigger emotion_detection_dag
      ```
 
-3. **Monitor Pipeline**:
+4. **Monitor Pipeline**:
 
-   - Use the Airflow UI to monitor task progress and logs.
-   - Check `logs/` directory for detailed logs.
+   - Use the Airflow UI to monitor task progress and view logs.
 
-4. **Review Results**:
+5. **Review Results**:
 
-   - Evaluated metrics are printed in logs and can be accessed in the Airflow UI.
    - The fine-tuned model is saved in `models/saved_model/`.
+   - Evaluation metrics are printed in logs and accessible in the Airflow UI.
+
+6. **Run Inference**:
+
+   - See the [Inference](#inference) section for instructions on using the fine-tuned model.
 
 ---
 
@@ -346,6 +266,10 @@ transformer_airflow_project/
 Run unit tests to ensure each component functions correctly.
 
 ```bash
+# Ensure you're in the virtual environment
+source venv/bin/activate
+
+# Run unit tests
 python -m unittest discover tests
 ```
 
@@ -373,7 +297,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-# Potential Future Works
+## Potential Future Works
 
 - **Data Augmentation**: Implement techniques to enhance the dataset and improve model robustness.
 - **Multi-Language Support**: Extend the pipeline to handle datasets in multiple languages.
@@ -387,7 +311,7 @@ Feel free to explore these ideas and contribute to the project's growth!
 
 ---
 
-# Examples of Text Data for the Flow
+## Examples of Text Data for the Flow
 
 We use the **Emotion Dataset**, but you can experiment with other text datasets:
 
@@ -395,3 +319,8 @@ We use the **Emotion Dataset**, but you can experiment with other text datasets:
 - **Twitter Sentiment Analysis**: Real-time sentiment tracking on specific hashtags.
 - **News Articles**: Topic modeling or fake news detection.
 - **Customer Support Tickets**: Intent classification to route tickets.
+
+---
+
+**Note**: Remember to update the `CONTRIBUTING.md` and `LICENSE` files if any changes have been made.
+
