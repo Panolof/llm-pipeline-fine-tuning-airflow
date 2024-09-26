@@ -6,7 +6,6 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.email_operator import EmailOperator
 from airflow.utils.dates import days_ago
 from datetime import timedelta
-import os
 
 # Import your custom scripts
 from scripts.download_data import download_data
@@ -14,6 +13,7 @@ from scripts.preprocess_data import preprocess_data
 from scripts.train_model import train_model
 from scripts.evaluate_model import evaluate_model
 from scripts.save_model import save_model
+from scripts.data_versioning import version_data  # New import
 
 default_args = {
     'owner': 'airflow',
@@ -48,6 +48,11 @@ with DAG(
         python_callable=preprocess_data,
     )
 
+    task_version_data = PythonOperator(
+        task_id='version_data',
+        python_callable=version_data,
+    )
+
     task_train_model = PythonOperator(
         task_id='train_model',
         python_callable=train_model,
@@ -75,5 +80,5 @@ with DAG(
     )
 
     # Define task dependencies
-    start >> task_download_data >> task_preprocess_data >> task_train_model
+    start >> task_download_data >> task_preprocess_data >> task_version_data >> task_train_model
     task_train_model >> task_evaluate_model >> task_save_model >> notify >> end
