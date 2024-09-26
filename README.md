@@ -34,9 +34,10 @@ The goal is to build an end-to-end automated pipeline that:
 3. **Evaluates the Model**: Assesses performance using metrics like accuracy and F1-score.
 4. **Saves the Model**: Stores the fine-tuned model locally or on cloud storage.
 5. **Performs Inference**: Uses the fine-tuned model to predict emotions on new text data.
-6. **Notifies Upon Completion**: Sends an email or Slack notification when the pipeline finishes.
+6. **Versions Data with DVC**: Automatically versions processed data using Data Version Control (DVC).
+7. **Notifies Upon Completion**: Sends an email or Slack notification when the pipeline finishes.
 
-By integrating these steps into an Airflow DAG, we demonstrate how to manage complex workflows, ensure data consistency, and automate machine learning tasks in a production-like environment.
+By integrating these steps into an Airflow DAG, we demonstrate how to manage complex workflows, ensure data consistency, automate machine learning tasks, and maintain data versioning in a production-like environment.
 
 ---
 
@@ -47,19 +48,21 @@ The Airflow DAG (`dags/emotion_detection_dag.py`) orchestrates the following tas
 1. **Start**: `DummyOperator` signaling the DAG's initiation.
 2. **Data Download**: `PythonOperator` that downloads the Emotion Dataset.
 3. **Data Preprocessing**: Cleans and tokenizes text data, encoding labels.
-4. **Model Fine-Tuning**: Fine-tunes `bert-base-uncased` for emotion detection.
-5. **Model Evaluation**: Evaluates the model using the test set.
-6. **Model Saving**: Saves the trained model and tokenizer.
-7. **Notification**: `EmailOperator` or `SlackAPIPostOperator` sends completion alerts.
-8. **End**: `DummyOperator` signaling the DAG's completion.
+4. **Data Versioning**: `PythonOperator` that versions the processed data using DVC.
+5. **Model Fine-Tuning**: Fine-tunes `bert-base-uncased` for emotion detection.
+6. **Model Evaluation**: Evaluates the model using the test set.
+7. **Model Saving**: Saves the trained model and tokenizer.
+8. **Notification**: `EmailOperator` or `SlackAPIPostOperator` sends completion alerts.
+9. **End**: `DummyOperator` signaling the DAG's completion.
 
 **Advanced Airflow Features Demonstrated**:
 
-- **Custom Operators**: Specialized tasks for model training and evaluation.
+- **Custom Operators**: Specialized tasks for model training, evaluation, and data versioning.
 - **XComs**: Pass data between tasks securely.
 - **Error Handling**: Retries and alerting on failures.
 - **Dynamic Task Mapping**: For scalable and parallel data processing.
 - **Integration with External Libraries**: Seamless use of Hugging Face within Airflow tasks.
+- **Data Versioning with DVC**: Ensures data consistency and reproducibility.
 
 ---
 
@@ -142,7 +145,8 @@ transformer_airflow_project/
 │   ├── train_model.py
 │   ├── evaluate_model.py
 │   ├── save_model.py
-│   └── example_data.py         # Added inference script
+│   ├── example_data.py         # Added inference script
+│   └── data_versioning.py      # Added data versioning script
 ├── tests/
 │   ├── __init__.py
 │   └── test_functions.py
@@ -170,6 +174,7 @@ transformer_airflow_project/
 - **Pandas 1.3.0**
 - **NumPy 1.21.0**
 - **Slack API Token** (if using Slack notifications)
+- **DVC 2.7.3** (for data versioning)
 - **Git**
 - **Docker** (if using Docker)
 - **GitHub Actions** (for CI/CD)
@@ -224,6 +229,15 @@ transformer_airflow_project/
    pip install apache-airflow-providers-slack
    pip install apache-airflow-providers-email
    ```
+
+7. **Initialize DVC**:
+
+   ```bash
+   dvc init
+   dvc remote add -d s3remote s3://your-bucket-name/path
+   dvc remote modify s3remote endpointurl https://s3.amazonaws.com
+   ```
+   Replace your-bucket-name/path with your actual S3 bucket and path.
 
 ---
 
@@ -333,6 +347,8 @@ python -m unittest discover tests
 - **Model Registry**: Use tools like **MLflow** for model tracking and management.
 - **Advanced Monitoring**: Integrate **Prometheus** and **Grafana** for real-time monitoring and alerting.
 - **Security Enhancements**: Implement authentication and authorization mechanisms for model access.
+- **Automated Data Validation**: Add tasks to validate data quality before processing.
+- **Scheduled Model Retraining**: Automate periodic retraining of models with fresh data.
 
 ---
 
