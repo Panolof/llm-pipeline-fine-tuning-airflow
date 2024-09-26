@@ -18,5 +18,8 @@ numpy==1.21.0
 # Slack SDK (if using SlackOperator)
 slack-sdk==3.9.1
 
+# Data Version Control
+dvc==2.7.3
+
 # Additional Dependencies
 python-dotenv
