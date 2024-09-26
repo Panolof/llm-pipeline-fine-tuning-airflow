@@ -54,6 +54,7 @@ airflow.db
 # DVC cache
 /.dvc/
 .cache/
+data/.gitignore  # Ensure DVC-managed data directories are ignored
 
 # Secrets
 secrets/
